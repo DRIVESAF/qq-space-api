@@ -1,0 +1,101 @@
+server:
+  # ??????
+  port: 8080
+  servlet:
+    # ???????
+    context-path: /qq-space-api
+
+spring:
+  application:
+    #????
+    name: qq-space-api
+  profiles:
+    # ????
+    active: dev
+  mvc:
+    path-match:
+      matching-strategy: ant_path_matcher
+servlet:
+  multipart:
+    max-file-size: 10485760 # ?????????10M
+    max-request-size: 10485760
+# ?????????
+mybatis-plus:
+  mapper-locations: classpath:/mapper/*Mapper.xml
+  # ????????????
+  type-aliases-package: io.drivesaf.*.entity
+  configuration:
+    # ???????
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    #????
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      # ??????
+      logic-delete-field: true
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+#????????
+logging:
+  # ??????
+  config: classpath:log/logback-spring.xml
+
+  # springdoc-openapi
+  springdoc:
+    swagger-ui:
+      path: /swagger-ui.html
+      tags-sorter: alpha
+      operations-sorter: alpha
+    api-docs:
+      path: /v3/api-docs
+    group-configs:
+      - group: 'default'
+        paths-to-match: '/**'
+        # ?? controller ?????????
+        packages-to-scan: io.drivesaf.qq.space.controller
+
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+  basic:
+    enable: true
+    username: admin
+    password: 123456
+
+# ??????????? url ??
+auth:
+  valid_urls:
+    - /auth/logout
+    - /user/**
+    - /resource/publish
+    - /shuoshuo/**
+    - /photoAlbum/**
+    - /photo/**
+    - /comment/**
+
+#??? OSS ????????
+aliyun:
+  oss:
+    #  oss ?????????
+    endpoint:
+    #?????????????
+    accessKeyId:
+    # ???????????? oss ????????????
+    accessKeySecret:
+    # oss ??????
+    bucketName:
+
+#  ??????????????
+share:
+  sms:
+    ccp:
+      serverIp: app.cloopen.com
+      port: 8883
+      accountSId:
+      accountToken:
+      appId:
+      templateId: 1
