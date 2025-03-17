@@ -9,11 +9,14 @@ import io.drivesaf.qq.space.convert.ShuoshuoConvert;
 import io.drivesaf.qq.space.mapper.ShuoshuoMapper;
 import io.drivesaf.qq.space.mapper.UserActionMapper;
 import io.drivesaf.qq.space.mapper.UserMapper;
+import io.drivesaf.qq.space.model.dto.AccessSpaceDTO;
 import io.drivesaf.qq.space.model.dto.ShuoshuoDTO;
 import io.drivesaf.qq.space.model.entity.Shuoshuo;
+import io.drivesaf.qq.space.model.entity.Space;
 import io.drivesaf.qq.space.model.entity.User;
 import io.drivesaf.qq.space.model.entity.UserAction;
 import io.drivesaf.qq.space.service.ShuoshuoService;
+import io.drivesaf.qq.space.service.SpaceService;
 import jakarta.annotation.Resource;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +36,8 @@ public class ShuoshuoServiceImpl extends ServiceImpl<ShuoshuoMapper, Shuoshuo> i
     private final UserMapper userMapper;
     @Resource
     private UserActionMapper actionMapper;
+    @Resource
+    private SpaceService spaceService;
 
     @Override
     public void publishShuoShuo(Shuoshuo shuoshuo) {
@@ -74,57 +79,6 @@ public class ShuoshuoServiceImpl extends ServiceImpl<ShuoshuoMapper, Shuoshuo> i
         if (rowsUpdated == 0) {
             throw new ServerException("未找到该说说或已删除");
         }
-    }
-
-    @Override
-    public List<Shuoshuo> getUserAndFriendShuoshuo(Integer userId) {
-        // 查询当前用户及其好友
-        List<User> friends = userMapper.getFriendsByUserId(userId);
-        List<Integer> friendIds = new ArrayList<>();
-        friendIds.add(userId); // 当前用户的说说也要显示
-        for (User friend : friends) {
-            friendIds.add(friend.getPkId());
-        }
-
-        // 查询所有说说，包括昵称和头像（联表查询）
-        List<Shuoshuo> allShuoshuo = baseMapper.selectList(new LambdaQueryWrapper<Shuoshuo>()
-                .in(Shuoshuo::getAuthor, friendIds)
-                .eq(Shuoshuo::getDeleteFlag, 0)  // 只查未删除的说说
-                .orderByDesc(Shuoshuo::getCreateTime) // 按时间倒序排序
-        );
-
-        // 联表查询用户的昵称和头像
-        for (Shuoshuo shuoshuo : allShuoshuo) {
-            User user = userMapper.selectById(shuoshuo.getAuthor());
-            if (user != null) {
-                shuoshuo.setNickname(user.getNickname());
-                shuoshuo.setAvatar(user.getAvatar());
-            }
-        }
-
-        // 过滤说说，依据权限判断是否可见
-        List<Shuoshuo> visibleShuoshuo = new ArrayList<>();
-        for (Shuoshuo shuoshuo : allShuoshuo) {
-            Integer visibleScope = shuoshuo.getVisibleScope();
-            List<Integer> visibleUser = shuoshuo.getVisibleUser();
-
-            if (visibleScope == 1) {
-                // 公开说说，所有人都可见，直接添加
-                visibleShuoshuo.add(shuoshuo);
-            } else if (visibleScope == 2) {
-                // 部分好友可见，检查当前用户是否在 visibleUser 列表中
-                if (visibleUser != null && visibleUser.contains(userId)) {
-                    visibleShuoshuo.add(shuoshuo);
-                }
-            } else if (visibleScope == 3) {
-                // 仅自己可见，检查是否是发布者
-                if (shuoshuo.getAuthor().equals(userId)) {
-                    visibleShuoshuo.add(shuoshuo);
-                }
-            }
-        }
-
-        return visibleShuoshuo;
     }
 
     // 查询用户所有未删除说说
@@ -280,4 +234,73 @@ public class ShuoshuoServiceImpl extends ServiceImpl<ShuoshuoMapper, Shuoshuo> i
         return likeCount.intValue();
     }
 
+    @Override
+    public List<Shuoshuo> getUserAndFriendShuoshuo(Integer userId) {
+        // 查询当前用户及其好友
+        List<User> friends = userMapper.getFriendsByUserId(userId);
+        List<Integer> friendIds = new ArrayList<>();
+        friendIds.add(userId); // 当前用户的说说也要显示
+        for (User friend : friends) {
+            friendIds.add(friend.getPkId());
+        }
+
+        // 查询所有说说，包括昵称和头像（联表查询）
+        List<Shuoshuo> allShuoshuo = baseMapper.selectList(new LambdaQueryWrapper<Shuoshuo>()
+                .in(Shuoshuo::getAuthor, friendIds)
+                .eq(Shuoshuo::getDeleteFlag, 0)
+                .orderByDesc(Shuoshuo::getCreateTime)
+        );
+
+        // 联表查询用户的昵称和头像
+        for (Shuoshuo shuoshuo : allShuoshuo) {
+            User user = userMapper.selectById(shuoshuo.getAuthor());
+            if (user != null) {
+                shuoshuo.setNickname(user.getNickname());
+                shuoshuo.setAvatar(user.getAvatar());
+            }
+        }
+
+        // 过滤说说，依据权限判断是否可见
+        List<Shuoshuo> visibleShuoshuo = new ArrayList<>();
+        Integer currentUserId = RequestContext.getUserId(); // 当前用户ID
+
+        for (Shuoshuo shuoshuo : allShuoshuo) {
+            Integer authorId = shuoshuo.getAuthor();
+            Integer visibleScope = shuoshuo.getVisibleScope();
+            List<Integer> visibleUser = shuoshuo.getVisibleUser();
+
+            boolean isVisible = false;
+
+            // 原可见性判断逻辑
+            if (visibleScope == 1) { // 公开
+                isVisible = true;
+            } else if (visibleScope == 2) { // 部分好友可见
+                if (visibleUser != null && visibleUser.contains(currentUserId)) {
+                    isVisible = true;
+                }
+            } else if (visibleScope == 3) { // 仅自己可见
+                if (authorId.equals(currentUserId)) {
+                    isVisible = true;
+                }
+            }
+
+            // 如果是好友的说说，额外检查空间访问权限
+            if (isVisible && !authorId.equals(currentUserId)) {
+                Space friendSpace = spaceService.getSpaceByCreateUserId(authorId);
+                if (friendSpace == null) {
+                    isVisible = false; // 好友无空间，不可见
+                } else {
+                    AccessSpaceDTO accessDto = new AccessSpaceDTO();
+                    accessDto.setSpaceId(friendSpace.getSpaceId());
+                    isVisible = spaceService.canAccessSpace(accessDto); // 调用权限检查
+                }
+            }
+
+            if (isVisible) {
+                visibleShuoshuo.add(shuoshuo);
+            }
+        }
+
+        return visibleShuoshuo;
+    }
 }

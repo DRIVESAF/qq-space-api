@@ -21,6 +21,16 @@ public interface UserService extends IService<User> {
      */
     @Schema(description = "用户信息")
     UserInfoVO userInfo();
+
+    /**
+     * 根据用户 ID 获取用户信息
+     *
+     * @param userId 用户 ID
+     * @return 用户信息对象
+     */
+    @Schema(description = "根据用户 ID 获取用户信息")
+    UserInfoVO getUserInfoById(Integer userId);
+
     /**
      * 查询用户的全部好友
      *

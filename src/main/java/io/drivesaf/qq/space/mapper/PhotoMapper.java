@@ -20,4 +20,13 @@ public interface PhotoMapper extends BaseMapper<Photo> {
     @Select("SELECT * FROM t_photo WHERE user_id = #{userId} AND delete_flag = 0 ORDER BY upload_time DESC")
     List<Photo> selectByUserIdOrderByUploadTimeDesc(@Param("userId") Integer userId);
 
+    /**
+     * 根据相册ID列表查询照片，并按上传时间倒序排列
+     *
+     * @param albumIds 相册ID列表
+     * @return 照片列表
+     */
+    @Select("SELECT * FROM t_photo WHERE photo_album_id IN (#{albumIds}) AND delete_flag = 0 ORDER BY upload_time DESC")
+    List<Photo> selectByAlbumIdsOrderByUploadTimeDesc(@Param("albumIds") List<Integer> albumIds);
+
 }

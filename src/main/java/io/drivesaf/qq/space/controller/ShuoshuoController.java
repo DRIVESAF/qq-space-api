@@ -2,11 +2,9 @@ package io.drivesaf.qq.space.controller;
 
 import io.drivesaf.qq.space.common.cache.RequestContext;
 import io.drivesaf.qq.space.common.result.Result;
-import io.drivesaf.qq.space.convert.ShuoshuoConvert;
 import io.drivesaf.qq.space.model.dto.ShuoshuoDTO;
 import io.drivesaf.qq.space.model.entity.Shuoshuo;
 import io.drivesaf.qq.space.model.vo.ShuoshuoVO;
-import io.drivesaf.qq.space.model.vo.UserInfoVO;
 import io.drivesaf.qq.space.service.ShuoshuoService;
 import io.drivesaf.qq.space.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +12,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+
+import com.alibaba.dashscope.aigc.generation.Generation;
+import com.alibaba.dashscope.aigc.generation.GenerationParam;
+import com.alibaba.dashscope.aigc.generation.GenerationResult;
+import com.alibaba.dashscope.common.Message;
+import com.alibaba.dashscope.common.Role;
+import com.alibaba.dashscope.exception.ApiException;
+import com.alibaba.dashscope.exception.InputRequiredException;
+import com.alibaba.dashscope.exception.NoApiKeyException;
+import com.alibaba.dashscope.utils.JsonUtils;
+
 
 import java.util.List;
 
@@ -52,7 +63,8 @@ public class ShuoshuoController {
             ShuoshuoVO vo = new ShuoshuoVO();
             vo.setPkId(shuoshuo.getPkId());
             vo.setContent(shuoshuo.getContent());
-            vo.setAuthor(shuoshuo.getNickname());
+            vo.setNickname(shuoshuo.getNickname());
+            vo.setAuthor(shuoshuo.getAuthor());
             vo.setAvatar(shuoshuo.getAvatar());
             vo.setLikeNum(shuoshuo.getLikeNum());
             vo.setIsTop(shuoshuo.getIsTop());
@@ -76,7 +88,8 @@ public class ShuoshuoController {
             ShuoshuoVO vo = new ShuoshuoVO();
             vo.setPkId(shuoshuo.getPkId());
             vo.setContent(shuoshuo.getContent());
-            vo.setAuthor(shuoshuo.getNickname());
+            vo.setNickname(shuoshuo.getNickname());
+            vo.setAuthor(shuoshuo.getAuthor());
             vo.setAvatar(shuoshuo.getAvatar());
             vo.setLikeNum(shuoshuo.getLikeNum());
             vo.setIsTop(shuoshuo.getIsTop());
@@ -100,7 +113,8 @@ public class ShuoshuoController {
             ShuoshuoVO vo = new ShuoshuoVO();
             vo.setPkId(shuoshuo.getPkId());
             vo.setContent(shuoshuo.getContent());
-            vo.setAuthor(shuoshuo.getNickname());
+            vo.setAuthor(shuoshuo.getAuthor());
+            vo.setNickname(shuoshuo.getNickname());
             vo.setAvatar(shuoshuo.getAvatar());
             vo.setLikeNum(shuoshuo.getLikeNum());
             vo.setIsTop(shuoshuo.getIsTop());
@@ -134,4 +148,52 @@ public class ShuoshuoController {
         return Result.ok(likeNum);
     }
 
+    @PostMapping("/ai-write")
+    @Operation(summary = "AI帮写")
+    public Result<String> aiWrite(@RequestParam String userInput) {
+        try {
+            GenerationResult result = callWithMessage(userInput);
+            // 提取 content 并去除换行符
+            String content = extractContentFromResult(result);
+            return Result.ok(content);
+        } catch (ApiException | NoApiKeyException | InputRequiredException e) {
+            log.error("An error occurred while calling the generation service: ", e);
+            return Result.error("AI帮写服务调用失败: " + e.getMessage());
+        }
+    }
+
+    private GenerationResult callWithMessage(String userInput) throws ApiException, NoApiKeyException, InputRequiredException {
+        Generation gen = new Generation();
+        Message systemMsg = Message.builder()
+                .role(Role.SYSTEM.getValue())
+                .content("You are a helpful assistant.")
+                .build();
+        Message userMsg = Message.builder()
+                .role(Role.USER.getValue())
+                .content(userInput)
+                .build();
+        GenerationParam param = GenerationParam.builder()
+                .apiKey(System.getenv("DASHSCOPE_API_KEY")) // 确保环境变量中有 DASHSCOPE_API_KEY
+                .model("farui-plus")
+                .messages(Arrays.asList(systemMsg, userMsg))
+                .resultFormat(GenerationParam.ResultFormat.MESSAGE)
+                .build();
+        return gen.call(param);
+    }
+
+    private String extractContentFromResult(GenerationResult result) {
+        if (result == null || result.getOutput() == null || result.getOutput().getChoices() == null) {
+            return "";
+        }
+
+        // 获取第一条 choice 的 content
+        String content = result.getOutput()
+                .getChoices()
+                .get(0)
+                .getMessage()
+                .getContent();
+
+        // 去除换行符和多余的空格
+        return content.replace("\n", "").trim();
+    }
 }

@@ -34,12 +34,13 @@ public class UserController {
     private final UserService userService;
     private final UserActionService userActionService;
 
-    // 查询用户信息
+    // 查询登录用户信息
     @GetMapping("info")
-    @Operation(summary = "查询用户信息")
+    @Operation(summary = "查询登录用户信息")
     public Result<UserInfoVO> userInfo() {
         return Result.ok(userService.userInfo());
     }
+
     // 收藏说说
     @PostMapping("shuoshuo/collect")
     @Operation(summary = "收藏说说")
@@ -47,6 +48,7 @@ public class UserController {
         userActionService.collectShuoshuo(shuoshuoId);
         return Result.ok();
     }
+
     // 点赞说说
     @PostMapping("shuoshuo/like")
     @Operation(summary = "点赞说说")
@@ -54,6 +56,7 @@ public class UserController {
         userActionService.likeShuoshuo(shuoshuoId);
         return Result.ok();
     }
+
     // 查询好友
     @GetMapping("friends")
     @Operation(summary = "查询好友")
@@ -63,5 +66,10 @@ public class UserController {
         return Result.ok(friends);
     }
 
-
+    // 根据用户 ID 查询用户信息
+    @GetMapping("info/{userId}")
+    @Operation(summary = "查询用户信息")
+    public Result<UserInfoVO> getUserInfoById(@PathVariable Integer userId) {
+        return Result.ok(userService.getUserInfoById(userId));
+    }
 }

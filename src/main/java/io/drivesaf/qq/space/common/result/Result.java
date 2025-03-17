@@ -4,11 +4,8 @@ import io.drivesaf.qq.space.common.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-/**
- * @author: DRIVESAF
- * @createTime: 2024/04/21 15:12
- * @description:
- **/
+import java.util.Map;
+
 @Data
 @Schema(name = "响应数据")
 public class Result<T> {
@@ -48,5 +45,18 @@ public class Result<T> {
         result.setCode(code);
         result.setMsg(msg);
         return result;
+    }
+
+    public static <T> Result<T> fail(int code, String msg, Map<String, Object> extraData) {
+        Result<T> result = new Result<>();
+        result.setCode(code);
+        result.setMsg(msg);
+        result.setData((T) extraData);
+        return result;
+    }
+
+    // 新增支持 ErrorCode 的 fail 方法
+    public static <T> Result<T> fail(ErrorCode errorCode) {
+        return error(errorCode.getCode(), errorCode.getMsg());
     }
 }

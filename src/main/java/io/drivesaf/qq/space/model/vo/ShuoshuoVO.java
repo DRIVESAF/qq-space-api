@@ -24,11 +24,14 @@ public class ShuoshuoVO implements Serializable {
     @Schema(description = "说说主键ID")
     private Integer pkId;
 
+    @Schema(description = "用户id")
+    private Integer author;
+
     @Schema(description = "说说内容")
     private String content;
 
     @Schema(description = "昵称")
-    private String author;
+    private String nickname;
 
     @Schema(description = "头像")
     private String avatar;

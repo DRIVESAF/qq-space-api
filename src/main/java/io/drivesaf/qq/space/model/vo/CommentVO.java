@@ -42,4 +42,7 @@ public class CommentVO implements Serializable {
     @Schema(description = "说说发布人昵称")
     private String shuoshuoAuthorNickname;
 
+    @Schema(description = "评论作者头像")
+    private String commentAuthorAvatar;
+
 }

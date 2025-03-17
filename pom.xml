@@ -144,6 +144,12 @@
             <artifactId>java-sms-sdk</artifactId>
             <version>${cloopen.sms.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <version>2.18.2</version>
+        </dependency>
     </dependencies>
 
     <build>

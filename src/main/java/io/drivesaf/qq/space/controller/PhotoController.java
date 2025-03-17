@@ -58,5 +58,12 @@ public class PhotoController {
         return Result.ok(photoVOList);
     }
 
+    @GetMapping("/user/{userId}/visible")
+    @Operation(summary = "查询指定用户的所有可见照片")
+    public Result<List<PhotoVO>> getUserVisiblePhotos(@PathVariable Integer userId) {
+        List<PhotoVO> photoVOList = photoService.getUserVisiblePhotos(userId);
+        return Result.ok(photoVOList);
+    }
+
 
 }

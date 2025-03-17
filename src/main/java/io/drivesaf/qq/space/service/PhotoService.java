@@ -39,4 +39,11 @@ public interface PhotoService {
      */
     List<PhotoVO> getUserPhotos(Integer userId);
 
+    /**
+     * 根据当前登录用户可见的相册，查询出这些可见相册的所有照片，按照倒序排列
+     *
+     * @return 照片信息列表
+     */
+    List<PhotoVO> getUserVisiblePhotos(Integer userId);
+
 }

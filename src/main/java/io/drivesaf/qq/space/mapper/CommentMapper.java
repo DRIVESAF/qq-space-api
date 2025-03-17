@@ -14,6 +14,7 @@ public interface CommentMapper extends BaseMapper<Comment> {
             "r.shuoshuo_id AS shuoshuoId, " +
             "c.comment_author AS commentAuthor, " +
             "u.nickname AS commentAuthorNickname, " +
+            "u.avatar AS commentAuthorAvatar, " +
             "c.comment_content AS commentContent, " +
             "c.create_time AS createTime, " +
             "c.image AS image, " +

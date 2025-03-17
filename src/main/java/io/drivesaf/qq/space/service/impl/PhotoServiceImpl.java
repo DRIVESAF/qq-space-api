@@ -122,4 +122,37 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoMapper, Photo> implements
         }).collect(Collectors.toList());
     }
 
+    @Override
+    public List<PhotoVO> getUserVisiblePhotos(Integer userId) {
+        // 查询目标用户的所有非私密相册
+        List<PhotoAlbum> visibleAlbums = photoAlbumMapper.selectNonPrivateAlbumsByUserId(userId);
+
+        // 获取这些相册的ID列表
+        List<Integer> visibleAlbumIds = visibleAlbums.stream()
+                .map(PhotoAlbum::getPhotoAlbumId)
+                .collect(Collectors.toList());
+
+        // 如果目标用户没有非私密相册，直接返回空列表
+        if (visibleAlbumIds.isEmpty()) {
+            return List.of();
+        }
+
+        // 查询这些相册中的所有照片，并按上传时间倒序排列
+        List<Photo> photos = photoMapper.selectByAlbumIdsOrderByUploadTimeDesc(visibleAlbumIds);
+
+        // 转换为VO对象
+        return photos.stream().map(photo -> {
+            PhotoVO photoVO = new PhotoVO();
+            photoVO.setPhotoId(photo.getPhotoId());
+            photoVO.setPhotoAlbumId(photo.getPhotoAlbumId());
+            photoVO.setUserId(photo.getUserId());
+            photoVO.setPhotoUrl(photo.getPhotoUrl());
+            photoVO.setPhotoDesc(photo.getPhotoDesc());
+            photoVO.setUploadTime(photo.getUploadTime());
+            // 如果需要，可以在这里查询并填充相册名称
+            return photoVO;
+        }).collect(Collectors.toList());
+    }
+
+
 }

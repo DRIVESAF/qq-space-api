@@ -45,6 +45,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public UserInfoVO getUserInfoById(Integer userId) {
+        // 查询数据库
+        User user = baseMapper.selectById(userId);
+
+        if (user == null) {
+            log.error("用户不存在, userId: {}", userId);
+            throw new ServerException(ErrorCode.USER_NOT_EXIST);
+        }
+
+        // 转换为 VO 对象
+        return UserConvert.INSTANCE.convert(user);
+    }
+
+    @Override
     public List<UserInfoVO> getUserFriends(Integer userId) {
         // 查询好友
         List<User> friends = baseMapper.getFriendsByUserId(userId);
@@ -52,8 +66,4 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 转换为 VO 对象
         return UserConvert.INSTANCE.convertList(friends);
     }
-
-
-
-
 }
